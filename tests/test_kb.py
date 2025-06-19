@@ -1,13 +1,9 @@
 # tests/test_kb.py
-"""
-鍵盤功能測試 - 以 WASD 為主
-"""
 import time
 
 from stbz_lib import kb_block, kb_hold, kb_tap, kb_unblock
 from stbz_lib._kb import get_blocked_keys, is_key_blocked
 
-# 虛擬鍵碼定義
 VK_W = 0x57
 VK_A = 0x41
 VK_S = 0x53
@@ -46,10 +42,8 @@ def test_kb_block_unblock():
     print("\n測試阻擋 WASD 按鍵...")
     wasd_keys = [VK_W, VK_A, VK_S, VK_D]
 
-    # 阻擋 WASD
     kb_block(wasd_keys)
 
-    # 檢查阻擋狀態
     assert all(is_key_blocked(key) for key in wasd_keys)
     blocked = get_blocked_keys()
     print(f"已阻擋的按鍵數量: {len(blocked)}")
@@ -57,7 +51,6 @@ def test_kb_block_unblock():
     print("請嘗試按 WASD（應該無效）...")
     time.sleep(3)
 
-    # 取消阻擋 W 和 A
     print("\n取消阻擋 W 和 A...")
     kb_unblock([VK_W, VK_A])
     assert not is_key_blocked(VK_W)
@@ -68,7 +61,6 @@ def test_kb_block_unblock():
     print("請嘗試按 WASD（W和A應該有效，S和D無效）...")
     time.sleep(3)
 
-    # 取消所有阻擋
     print("\n取消所有阻擋...")
     kb_unblock()
     assert len(get_blocked_keys()) == 0
@@ -77,7 +69,7 @@ def test_kb_block_unblock():
 def test_kb_block_all():
     """測試阻擋所有按鍵"""
     print("\n測試阻擋所有按鍵...")
-    kb_block()  # 不傳參數 = 阻擋所有
+    kb_block()
 
     blocked_count = len(get_blocked_keys())
     print(f"已阻擋 {blocked_count} 個按鍵")
@@ -93,11 +85,9 @@ def test_kb_game_simulation():
     """模擬遊戲操作"""
     print("\n模擬遊戲操作...")
 
-    # 模擬前進
     print("模擬前進 (W)...")
     kb_hold(VK_W, duration_ms=1500)
 
-    # 模擬左右移動
     print("模擬左右閃避 (A-D-A-D)...")
     for _ in range(2):
         kb_tap(VK_A)
@@ -105,11 +95,9 @@ def test_kb_game_simulation():
         kb_tap(VK_D)
         time.sleep(0.2)
 
-    # 模擬跳躍
     print("模擬跳躍 (Space)...")
     kb_tap(VK_SPACE, count=3, interval_ms=300)
 
-    # 模擬蹲下
     print("模擬蹲下 (S)...")
     kb_hold(VK_S, duration_ms=1000)
 
@@ -123,7 +111,7 @@ def test_interactive():
     kb_block([VK_W, VK_A, VK_S, VK_D])
 
     print("\n等待測試（按 ESC 繼續）...")
-    # 這裡實際應用中可以加入檢測 ESC 的邏輯
+
     time.sleep(5)
 
     kb_unblock()
@@ -153,13 +141,11 @@ def run_all_tests():
         test_kb_game_simulation()
         time.sleep(1)
 
-        # test_interactive()  # 可選的互動測試
-
         print("\n=== 所有測試完成 ===")
 
     except Exception as e:
         print(f"\n測試失敗: {e}")
-        kb_unblock()  # 確保清理阻擋狀態
+        kb_unblock()
         raise
 
 
