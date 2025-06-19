@@ -68,12 +68,10 @@ LLMHF_INJECTED = 0x00000001
 # MapVirtualKey 常數
 MAPVK_VK_TO_VSC = 0
 
+
 # ── 共用結構定義 ─────────────────────────────────────
 class POINT(ctypes.Structure):
-    _fields_ = [
-        ("x", wintypes.LONG),
-        ("y", wintypes.LONG)
-    ]
+    _fields_ = [("x", wintypes.LONG), ("y", wintypes.LONG)]
 
 
 class MSG(ctypes.Structure):
@@ -83,7 +81,7 @@ class MSG(ctypes.Structure):
         ("wParam", WPARAM),
         ("lParam", LPARAM),
         ("time", wintypes.DWORD),
-        ("pt", POINT)
+        ("pt", POINT),
     ]
 
 
@@ -96,7 +94,7 @@ class KBDLLHOOKSTRUCT(ctypes.Structure):
         ("scanCode", wintypes.DWORD),
         ("flags", wintypes.DWORD),
         ("time", wintypes.DWORD),
-        ("dwExtraInfo", ULONG_PTR)
+        ("dwExtraInfo", ULONG_PTR),
     ]
 
 
@@ -107,7 +105,7 @@ class MSLLHOOKSTRUCT(ctypes.Structure):
         ("mouseData", wintypes.DWORD),
         ("flags", wintypes.DWORD),
         ("time", wintypes.DWORD),
-        ("dwExtraInfo", ULONG_PTR)
+        ("dwExtraInfo", ULONG_PTR),
     ]
 
 
@@ -118,7 +116,7 @@ class KEYBDINPUT(ctypes.Structure):
         ("wScan", wintypes.WORD),
         ("dwFlags", wintypes.DWORD),
         ("time", wintypes.DWORD),
-        ("dwExtraInfo", ULONG_PTR)
+        ("dwExtraInfo", ULONG_PTR),
     ]
 
 
@@ -129,31 +127,20 @@ class MOUSEINPUT(ctypes.Structure):
         ("mouseData", wintypes.DWORD),
         ("dwFlags", wintypes.DWORD),
         ("time", wintypes.DWORD),
-        ("dwExtraInfo", ULONG_PTR)
+        ("dwExtraInfo", ULONG_PTR),
     ]
 
 
 class HARDWAREINPUT(ctypes.Structure):
-    _fields_ = [
-        ("uMsg", wintypes.DWORD),
-        ("wParamL", wintypes.WORD),
-        ("wParamH", wintypes.WORD)
-    ]
+    _fields_ = [("uMsg", wintypes.DWORD), ("wParamL", wintypes.WORD), ("wParamH", wintypes.WORD)]
 
 
 class INPUT_UNION(ctypes.Union):
-    _fields_ = [
-        ("mi", MOUSEINPUT),
-        ("ki", KEYBDINPUT),
-        ("hi", HARDWAREINPUT)
-    ]
+    _fields_ = [("mi", MOUSEINPUT), ("ki", KEYBDINPUT), ("hi", HARDWAREINPUT)]
 
 
 class INPUT(ctypes.Structure):
-    _fields_ = [
-        ("type", wintypes.DWORD),
-        ("u", INPUT_UNION)
-    ]
+    _fields_ = [("type", wintypes.DWORD), ("u", INPUT_UNION)]
 
 
 # ── DLL 載入 ─────────────────────────────────────────
@@ -169,9 +156,9 @@ LowLevelMouseProc = ctypes.WINFUNCTYPE(LRESULT, ctypes.c_int, WPARAM, LPARAM)
 user32.SetWindowsHookExW.restype = HHOOK
 user32.SetWindowsHookExW.argtypes = (
     ctypes.c_int,
-    ctypes.c_void_p,  # 使用 c_void_p 以相容不同的回調類型
+    ctypes.c_void_p,
     wintypes.HMODULE,
-    wintypes.DWORD
+    wintypes.DWORD,
 )
 
 # CallNextHookEx
@@ -227,5 +214,5 @@ kernel32.GetCurrentThreadId.restype = wintypes.DWORD
 kernel32.GetCurrentThreadId.argtypes = ()
 
 # ── 系統指標常數 ─────────────────────────────────────
-SM_CXSCREEN = 0  # 螢幕寬度
-SM_CYSCREEN = 1  # 螢幕高度
+SM_CXSCREEN = 0
+SM_CYSCREEN = 1
