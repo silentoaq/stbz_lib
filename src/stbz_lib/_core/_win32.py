@@ -1,7 +1,6 @@
 # src/stbz_lib/_win32.py
 """
 Windows API 定義與結構
-包含鍵盤和滑鼠共用的 Win32 API
 """
 import ctypes
 from ctypes import wintypes
