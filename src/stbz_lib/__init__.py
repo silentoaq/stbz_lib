@@ -3,6 +3,7 @@ stbz_lib 對外 API。
 """
 
 from ._capture import capture
+from ._close import close
 from ._kb import kb_block, kb_hold, kb_tap, kb_unblock
 from ._mouse import mouse_block, mouse_hold, mouse_move, mouse_pos, mouse_tap, mouse_unblock
 
@@ -21,4 +22,6 @@ __all__ = [
     "mouse_move",
     # 截圖
     "capture",
+    # 視窗控制
+    "close",
 ]
