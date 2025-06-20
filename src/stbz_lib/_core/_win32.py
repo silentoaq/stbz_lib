@@ -95,6 +95,7 @@ PROCESS_TERMINATE = 0x0001
 # 結構定義
 # ══════════════════════════════════════════════════════
 
+
 # ── 基礎結構 ─────────────────────────────────────────
 class POINT(ctypes.Structure):
     _fields_ = [("x", wintypes.LONG), ("y", wintypes.LONG)]
@@ -112,6 +113,7 @@ class MSG(ctypes.Structure):
 
 
 LPMSG = ctypes.POINTER(MSG)
+
 
 # ── Hook 結構 ────────────────────────────────────────
 class KBDLLHOOKSTRUCT(ctypes.Structure):
@@ -133,6 +135,7 @@ class MSLLHOOKSTRUCT(ctypes.Structure):
         ("time", wintypes.DWORD),
         ("dwExtraInfo", ULONG_PTR),
     ]
+
 
 # ── 輸入結構 ─────────────────────────────────────────
 class KEYBDINPUT(ctypes.Structure):
@@ -167,6 +170,7 @@ class INPUT_UNION(ctypes.Union):
 class INPUT(ctypes.Structure):
     _fields_ = [("type", wintypes.DWORD), ("u", INPUT_UNION)]
 
+
 # ── GDI 結構 ─────────────────────────────────────────
 class BITMAPINFOHEADER(ctypes.Structure):
     _fields_ = [
@@ -186,6 +190,7 @@ class BITMAPINFOHEADER(ctypes.Structure):
 
 class BITMAPINFO(ctypes.Structure):
     _fields_ = [("bmiHeader", BITMAPINFOHEADER), ("bmiColors", wintypes.DWORD * 3)]
+
 
 # ══════════════════════════════════════════════════════
 # DLL 載入
