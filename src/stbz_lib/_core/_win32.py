@@ -1,0 +1,375 @@
+# src/stbz_lib/_core/_win32.py
+"""
+Windows API 定義與結構
+"""
+import ctypes
+from ctypes import wintypes
+
+# ══════════════════════════════════════════════════════
+# 指標相容性定義
+# ══════════════════════════════════════════════════════
+PTR = ctypes.sizeof(ctypes.c_void_p)
+ULONG_PTR = ctypes.c_ulonglong if PTR == 8 else ctypes.c_ulong
+LONG_PTR = ctypes.c_longlong if PTR == 8 else ctypes.c_long
+WPARAM = ULONG_PTR
+LPARAM = LONG_PTR
+LRESULT = LONG_PTR
+HHOOK = ctypes.c_void_p
+
+# ══════════════════════════════════════════════════════
+# 常數定義
+# ══════════════════════════════════════════════════════
+
+# ── Hook 相關 ────────────────────────────────────────
+WH_KEYBOARD_LL = 13
+WH_MOUSE_LL = 14
+
+LLKHF_INJECTED = 0x00000010
+LLMHF_INJECTED = 0x00000001
+
+# ── 視窗訊息 ─────────────────────────────────────────
+WM_QUIT = 0x0012
+WM_CLOSE = 0x0010
+
+# 鍵盤訊息
+WM_KEYDOWN = 0x0100
+WM_KEYUP = 0x0101
+
+# 滑鼠訊息
+WM_MOUSEMOVE = 0x0200
+WM_LBUTTONDOWN = 0x0201
+WM_LBUTTONUP = 0x0202
+WM_RBUTTONDOWN = 0x0204
+WM_RBUTTONUP = 0x0205
+WM_MBUTTONDOWN = 0x0207
+WM_MBUTTONUP = 0x0208
+WM_XBUTTONDOWN = 0x020B
+WM_XBUTTONUP = 0x020C
+
+# ── 輸入相關 ─────────────────────────────────────────
+INPUT_MOUSE = 0
+INPUT_KEYBOARD = 1
+INPUT_HARDWARE = 2
+
+# 鍵盤事件標誌
+KEYEVENTF_EXTENDEDKEY = 0x0001
+KEYEVENTF_KEYUP = 0x0002
+KEYEVENTF_UNICODE = 0x0004
+KEYEVENTF_SCANCODE = 0x0008
+
+# 滑鼠事件標誌
+MOUSEEVENTF_MOVE = 0x0001
+MOUSEEVENTF_LEFTDOWN = 0x0002
+MOUSEEVENTF_LEFTUP = 0x0004
+MOUSEEVENTF_RIGHTDOWN = 0x0008
+MOUSEEVENTF_RIGHTUP = 0x0010
+MOUSEEVENTF_MIDDLEDOWN = 0x0020
+MOUSEEVENTF_MIDDLEUP = 0x0040
+MOUSEEVENTF_XDOWN = 0x0080
+MOUSEEVENTF_XUP = 0x0100
+MOUSEEVENTF_WHEEL = 0x0800
+MOUSEEVENTF_HWHEEL = 0x1000
+MOUSEEVENTF_ABSOLUTE = 0x8000
+
+# 滑鼠按鈕
+XBUTTON1 = 0x0001
+XBUTTON2 = 0x0002
+
+# 虛擬鍵碼映射
+MAPVK_VK_TO_VSC = 0
+
+# ── 系統指標 ─────────────────────────────────────────
+SM_CXSCREEN = 0
+SM_CYSCREEN = 1
+
+# ── GDI/截圖相關 ─────────────────────────────────────
+SRCCOPY = 0x00CC0020
+PW_RENDERFULLCONTENT = 0x00000002
+DIB_RGB_COLORS = 0
+BI_RGB = 0
+
+# ── 進程相關 ─────────────────────────────────────────
+PROCESS_TERMINATE = 0x0001
+
+# ══════════════════════════════════════════════════════
+# 結構定義
+# ══════════════════════════════════════════════════════
+
+
+# ── 基礎結構 ─────────────────────────────────────────
+class POINT(ctypes.Structure):
+    _fields_ = [("x", wintypes.LONG), ("y", wintypes.LONG)]
+
+
+class MSG(ctypes.Structure):
+    _fields_ = [
+        ("hwnd", wintypes.HWND),
+        ("message", wintypes.UINT),
+        ("wParam", WPARAM),
+        ("lParam", LPARAM),
+        ("time", wintypes.DWORD),
+        ("pt", POINT),
+    ]
+
+
+LPMSG = ctypes.POINTER(MSG)
+
+
+# ── Hook 結構 ────────────────────────────────────────
+class KBDLLHOOKSTRUCT(ctypes.Structure):
+    _fields_ = [
+        ("vkCode", wintypes.DWORD),
+        ("scanCode", wintypes.DWORD),
+        ("flags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", ULONG_PTR),
+    ]
+
+
+class MSLLHOOKSTRUCT(ctypes.Structure):
+    _fields_ = [
+        ("x", wintypes.LONG),
+        ("y", wintypes.LONG),
+        ("mouseData", wintypes.DWORD),
+        ("flags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", ULONG_PTR),
+    ]
+
+
+# ── 輸入結構 ─────────────────────────────────────────
+class KEYBDINPUT(ctypes.Structure):
+    _fields_ = [
+        ("wVk", wintypes.WORD),
+        ("wScan", wintypes.WORD),
+        ("dwFlags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", ULONG_PTR),
+    ]
+
+
+class MOUSEINPUT(ctypes.Structure):
+    _fields_ = [
+        ("dx", wintypes.LONG),
+        ("dy", wintypes.LONG),
+        ("mouseData", wintypes.DWORD),
+        ("dwFlags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", ULONG_PTR),
+    ]
+
+
+class HARDWAREINPUT(ctypes.Structure):
+    _fields_ = [("uMsg", wintypes.DWORD), ("wParamL", wintypes.WORD), ("wParamH", wintypes.WORD)]
+
+
+class INPUT_UNION(ctypes.Union):
+    _fields_ = [("mi", MOUSEINPUT), ("ki", KEYBDINPUT), ("hi", HARDWAREINPUT)]
+
+
+class INPUT(ctypes.Structure):
+    _fields_ = [("type", wintypes.DWORD), ("u", INPUT_UNION)]
+
+
+# ── GDI 結構 ─────────────────────────────────────────
+class BITMAPINFOHEADER(ctypes.Structure):
+    _fields_ = [
+        ("biSize", wintypes.DWORD),
+        ("biWidth", wintypes.LONG),
+        ("biHeight", wintypes.LONG),
+        ("biPlanes", wintypes.WORD),
+        ("biBitCount", wintypes.WORD),
+        ("biCompression", wintypes.DWORD),
+        ("biSizeImage", wintypes.DWORD),
+        ("biXPelsPerMeter", wintypes.LONG),
+        ("biYPelsPerMeter", wintypes.LONG),
+        ("biClrUsed", wintypes.DWORD),
+        ("biClrImportant", wintypes.DWORD),
+    ]
+
+
+class BITMAPINFO(ctypes.Structure):
+    _fields_ = [("bmiHeader", BITMAPINFOHEADER), ("bmiColors", wintypes.DWORD * 3)]
+
+
+# ══════════════════════════════════════════════════════
+# DLL 載入
+# ══════════════════════════════════════════════════════
+user32 = ctypes.WinDLL("user32", use_last_error=True)
+kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+gdi32 = ctypes.WinDLL("gdi32", use_last_error=True)
+
+# ══════════════════════════════════════════════════════
+# 回調函數類型
+# ══════════════════════════════════════════════════════
+LowLevelKeyboardProc = ctypes.WINFUNCTYPE(LRESULT, ctypes.c_int, WPARAM, LPARAM)
+LowLevelMouseProc = ctypes.WINFUNCTYPE(LRESULT, ctypes.c_int, WPARAM, LPARAM)
+WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+# ══════════════════════════════════════════════════════
+# API 函數定義
+# ══════════════════════════════════════════════════════
+
+# ── Hook 相關 API ────────────────────────────────────
+# SetWindowsHookEx
+user32.SetWindowsHookExW.restype = HHOOK
+user32.SetWindowsHookExW.argtypes = (
+    ctypes.c_int,
+    ctypes.c_void_p,
+    wintypes.HMODULE,
+    wintypes.DWORD,
+)
+
+# CallNextHookEx
+user32.CallNextHookEx.restype = LRESULT
+user32.CallNextHookEx.argtypes = (HHOOK, ctypes.c_int, WPARAM, LPARAM)
+
+# UnhookWindowsHookEx
+user32.UnhookWindowsHookEx.restype = wintypes.BOOL
+user32.UnhookWindowsHookEx.argtypes = (HHOOK,)
+
+# ── 訊息處理 API ─────────────────────────────────────
+# GetMessage
+user32.GetMessageW.restype = wintypes.BOOL
+user32.GetMessageW.argtypes = (LPMSG, wintypes.HWND, wintypes.UINT, wintypes.UINT)
+
+# TranslateMessage
+user32.TranslateMessage.restype = wintypes.BOOL
+user32.TranslateMessage.argtypes = (LPMSG,)
+
+# DispatchMessage
+user32.DispatchMessageW.restype = LRESULT
+user32.DispatchMessageW.argtypes = (LPMSG,)
+
+# PostThreadMessage
+user32.PostThreadMessageW.restype = wintypes.BOOL
+user32.PostThreadMessageW.argtypes = (wintypes.DWORD, wintypes.UINT, WPARAM, LPARAM)
+
+# PostMessage
+user32.PostMessageW.restype = wintypes.BOOL
+user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, WPARAM, LPARAM]
+
+# ── 輸入 API ─────────────────────────────────────────
+# SendInput
+user32.SendInput.restype = wintypes.UINT
+user32.SendInput.argtypes = (wintypes.UINT, ctypes.POINTER(INPUT), ctypes.c_int)
+
+# MapVirtualKey
+user32.MapVirtualKeyW.restype = wintypes.UINT
+user32.MapVirtualKeyW.argtypes = (wintypes.UINT, wintypes.UINT)
+
+# GetCursorPos
+user32.GetCursorPos.restype = wintypes.BOOL
+user32.GetCursorPos.argtypes = (ctypes.POINTER(POINT),)
+
+# SetCursorPos
+user32.SetCursorPos.restype = wintypes.BOOL
+user32.SetCursorPos.argtypes = (ctypes.c_int, ctypes.c_int)
+
+# ── 系統 API ─────────────────────────────────────────
+# GetSystemMetrics
+user32.GetSystemMetrics.restype = ctypes.c_int
+user32.GetSystemMetrics.argtypes = (ctypes.c_int,)
+
+# GetModuleHandle
+kernel32.GetModuleHandleW.restype = wintypes.HMODULE
+kernel32.GetModuleHandleW.argtypes = (wintypes.LPCWSTR,)
+
+# GetCurrentThreadId
+kernel32.GetCurrentThreadId.restype = wintypes.DWORD
+kernel32.GetCurrentThreadId.argtypes = ()
+
+# ── 視窗列舉 API ─────────────────────────────────────
+# EnumWindows
+user32.EnumWindows.restype = wintypes.BOOL
+user32.EnumWindows.argtypes = [WNDENUMPROC, wintypes.LPARAM]
+
+# GetWindowTextLength
+user32.GetWindowTextLengthW.restype = wintypes.INT
+
+# GetWindowTextW
+user32.GetWindowTextW.restype = wintypes.INT
+user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, wintypes.INT]
+
+# IsWindowVisible
+user32.IsWindowVisible.restype = wintypes.BOOL
+
+# GetWindowRect
+user32.GetWindowRect.restype = wintypes.BOOL
+user32.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+
+# ── GDI/截圖 API ─────────────────────────────────────
+# PrintWindow
+user32.PrintWindow.restype = wintypes.BOOL
+user32.PrintWindow.argtypes = [wintypes.HWND, ctypes.c_void_p, wintypes.UINT]
+
+# GetWindowDC
+user32.GetWindowDC.restype = ctypes.c_void_p
+user32.GetWindowDC.argtypes = [wintypes.HWND]
+
+# ReleaseDC
+user32.ReleaseDC.restype = wintypes.INT
+user32.ReleaseDC.argtypes = [wintypes.HWND, ctypes.c_void_p]
+
+# CreateCompatibleDC
+gdi32.CreateCompatibleDC.restype = ctypes.c_void_p
+gdi32.CreateCompatibleDC.argtypes = [ctypes.c_void_p]
+
+# CreateCompatibleBitmap
+gdi32.CreateCompatibleBitmap.restype = ctypes.c_void_p
+gdi32.CreateCompatibleBitmap.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+
+# SelectObject
+gdi32.SelectObject.restype = ctypes.c_void_p
+gdi32.SelectObject.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+
+# BitBlt
+gdi32.BitBlt.restype = wintypes.BOOL
+gdi32.BitBlt.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_void_p,
+    ctypes.c_int,
+    ctypes.c_int,
+    wintypes.DWORD,
+]
+
+# GetDIBits
+gdi32.GetDIBits.restype = wintypes.INT
+gdi32.GetDIBits.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+    wintypes.UINT,
+    wintypes.UINT,
+    ctypes.c_void_p,
+    ctypes.POINTER(BITMAPINFO),
+    wintypes.UINT,
+]
+
+# DeleteObject
+gdi32.DeleteObject.restype = wintypes.BOOL
+gdi32.DeleteObject.argtypes = [ctypes.c_void_p]
+
+# DeleteDC
+gdi32.DeleteDC.restype = wintypes.BOOL
+gdi32.DeleteDC.argtypes = [ctypes.c_void_p]
+
+# ── 進程相關 API ─────────────────────────────────────
+# GetWindowThreadProcessId
+user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+
+# OpenProcess
+kernel32.OpenProcess.restype = wintypes.HANDLE
+kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+
+# TerminateProcess
+kernel32.TerminateProcess.restype = wintypes.BOOL
+kernel32.TerminateProcess.argtypes = [wintypes.HANDLE, wintypes.UINT]
+
+# CloseHandle
+kernel32.CloseHandle.restype = wintypes.BOOL
+kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
