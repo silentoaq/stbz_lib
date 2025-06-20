@@ -20,6 +20,7 @@ WH_MOUSE_LL = 14
 
 # ── 訊息常數 ─────────────────────────────────────────
 WM_QUIT = 0x0012
+WM_CLOSE = 0x0010
 WM_KEYDOWN = 0x0100
 WM_KEYUP = 0x0101
 WM_MOUSEMOVE = 0x0200
@@ -212,6 +213,10 @@ user32.DispatchMessageW.argtypes = (LPMSG,)
 # PostThreadMessage
 user32.PostThreadMessageW.restype = wintypes.BOOL
 user32.PostThreadMessageW.argtypes = (wintypes.DWORD, wintypes.UINT, WPARAM, LPARAM)
+
+# PostMessage
+user32.PostMessageW.restype = wintypes.BOOL
+user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, WPARAM, LPARAM]
 
 # SendInput
 user32.SendInput.restype = wintypes.UINT
