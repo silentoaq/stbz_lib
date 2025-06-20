@@ -1,4 +1,4 @@
-# src/stbz_lib/_win32.py
+# src/stbz_lib/_core/_win32.py
 """
 Windows API 定義與結構
 """
@@ -261,32 +261,47 @@ user32.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
 
 # PrintWindow
 user32.PrintWindow.restype = wintypes.BOOL
-user32.PrintWindow.argtypes = [wintypes.HWND, wintypes.HDC, wintypes.UINT]
+user32.PrintWindow.argtypes = [wintypes.HWND, ctypes.c_void_p, wintypes.UINT]
 
 # GetWindowDC
-user32.GetWindowDC.restype = wintypes.HDC
+user32.GetWindowDC.restype = ctypes.c_void_p
+user32.GetWindowDC.argtypes = [wintypes.HWND]
 
 # ReleaseDC
 user32.ReleaseDC.restype = wintypes.INT
-user32.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
+user32.ReleaseDC.argtypes = [wintypes.HWND, ctypes.c_void_p]
 
 # CreateCompatibleDC
-gdi32.CreateCompatibleDC.restype = wintypes.HDC
+gdi32.CreateCompatibleDC.restype = ctypes.c_void_p
+gdi32.CreateCompatibleDC.argtypes = [ctypes.c_void_p]
 
 # CreateCompatibleBitmap
-gdi32.CreateCompatibleBitmap.restype = wintypes.HBITMAP
+gdi32.CreateCompatibleBitmap.restype = ctypes.c_void_p
+gdi32.CreateCompatibleBitmap.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
 
 # SelectObject
-gdi32.SelectObject.restype = wintypes.HGDIOBJ
+gdi32.SelectObject.restype = ctypes.c_void_p
+gdi32.SelectObject.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
 
 # BitBlt
 gdi32.BitBlt.restype = wintypes.BOOL
+gdi32.BitBlt.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_void_p,
+    ctypes.c_int,
+    ctypes.c_int,
+    wintypes.DWORD,
+]
 
 # GetDIBits
 gdi32.GetDIBits.restype = wintypes.INT
 gdi32.GetDIBits.argtypes = [
-    wintypes.HDC,
-    wintypes.HBITMAP,
+    ctypes.c_void_p,
+    ctypes.c_void_p,
     wintypes.UINT,
     wintypes.UINT,
     ctypes.c_void_p,
@@ -296,9 +311,11 @@ gdi32.GetDIBits.argtypes = [
 
 # DeleteObject
 gdi32.DeleteObject.restype = wintypes.BOOL
+gdi32.DeleteObject.argtypes = [ctypes.c_void_p]
 
 # DeleteDC
 gdi32.DeleteDC.restype = wintypes.BOOL
+gdi32.DeleteDC.argtypes = [ctypes.c_void_p]
 
 # ── 系統指標常數 ─────────────────────────────────────
 SM_CXSCREEN = 0
