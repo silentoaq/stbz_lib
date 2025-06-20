@@ -68,6 +68,12 @@ LLMHF_INJECTED = 0x00000001
 # MapVirtualKey 常數
 MAPVK_VK_TO_VSC = 0
 
+# ── GDI/截圖相關常數 ─────────────────────────────────
+SRCCOPY = 0x00CC0020
+PW_RENDERFULLCONTENT = 0x00000002
+DIB_RGB_COLORS = 0
+BI_RGB = 0
+
 
 # ── 共用結構定義 ─────────────────────────────────────
 class POINT(ctypes.Structure):
@@ -109,6 +115,26 @@ class MSLLHOOKSTRUCT(ctypes.Structure):
     ]
 
 
+class BITMAPINFOHEADER(ctypes.Structure):
+    _fields_ = [
+        ("biSize", wintypes.DWORD),
+        ("biWidth", wintypes.LONG),
+        ("biHeight", wintypes.LONG),
+        ("biPlanes", wintypes.WORD),
+        ("biBitCount", wintypes.WORD),
+        ("biCompression", wintypes.DWORD),
+        ("biSizeImage", wintypes.DWORD),
+        ("biXPelsPerMeter", wintypes.LONG),
+        ("biYPelsPerMeter", wintypes.LONG),
+        ("biClrUsed", wintypes.DWORD),
+        ("biClrImportant", wintypes.DWORD),
+    ]
+
+
+class BITMAPINFO(ctypes.Structure):
+    _fields_ = [("bmiHeader", BITMAPINFOHEADER), ("bmiColors", wintypes.DWORD * 3)]
+
+
 # ── 輸入結構定義 ─────────────────────────────────────
 class KEYBDINPUT(ctypes.Structure):
     _fields_ = [
@@ -146,10 +172,12 @@ class INPUT(ctypes.Structure):
 # ── DLL 載入 ─────────────────────────────────────────
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+gdi32 = ctypes.WinDLL("gdi32", use_last_error=True)
 
 # ── 回調函數類型定義 ─────────────────────────────────
 LowLevelKeyboardProc = ctypes.WINFUNCTYPE(LRESULT, ctypes.c_int, WPARAM, LPARAM)
 LowLevelMouseProc = ctypes.WINFUNCTYPE(LRESULT, ctypes.c_int, WPARAM, LPARAM)
+WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
 
 # ── API 函數定義 ─────────────────────────────────────
 # SetWindowsHookEx
@@ -212,6 +240,65 @@ kernel32.GetModuleHandleW.argtypes = (wintypes.LPCWSTR,)
 # GetCurrentThreadId
 kernel32.GetCurrentThreadId.restype = wintypes.DWORD
 kernel32.GetCurrentThreadId.argtypes = ()
+
+# EnumWindows
+user32.EnumWindows.restype = wintypes.BOOL
+user32.EnumWindows.argtypes = [WNDENUMPROC, wintypes.LPARAM]
+
+# GetWindowTextLength
+user32.GetWindowTextLengthW.restype = wintypes.INT
+
+# GetWindowTextW
+user32.GetWindowTextW.restype = wintypes.INT
+user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, wintypes.INT]
+
+# IsWindowVisible
+user32.IsWindowVisible.restype = wintypes.BOOL
+
+# GetWindowRect
+user32.GetWindowRect.restype = wintypes.BOOL
+user32.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+
+# PrintWindow
+user32.PrintWindow.restype = wintypes.BOOL
+user32.PrintWindow.argtypes = [wintypes.HWND, wintypes.HDC, wintypes.UINT]
+
+# GetWindowDC
+user32.GetWindowDC.restype = wintypes.HDC
+
+# ReleaseDC
+user32.ReleaseDC.restype = wintypes.INT
+user32.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
+
+# CreateCompatibleDC
+gdi32.CreateCompatibleDC.restype = wintypes.HDC
+
+# CreateCompatibleBitmap
+gdi32.CreateCompatibleBitmap.restype = wintypes.HBITMAP
+
+# SelectObject
+gdi32.SelectObject.restype = wintypes.HGDIOBJ
+
+# BitBlt
+gdi32.BitBlt.restype = wintypes.BOOL
+
+# GetDIBits
+gdi32.GetDIBits.restype = wintypes.INT
+gdi32.GetDIBits.argtypes = [
+    wintypes.HDC,
+    wintypes.HBITMAP,
+    wintypes.UINT,
+    wintypes.UINT,
+    ctypes.c_void_p,
+    ctypes.POINTER(BITMAPINFO),
+    wintypes.UINT,
+]
+
+# DeleteObject
+gdi32.DeleteObject.restype = wintypes.BOOL
+
+# DeleteDC
+gdi32.DeleteDC.restype = wintypes.BOOL
 
 # ── 系統指標常數 ─────────────────────────────────────
 SM_CXSCREEN = 0
