@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - 新增 MIT 授權檔 **LICENSE**
-- 補上模組 metadata：
 
 ## [0.1.0](https://github.com/silentoaq/stbz_lib/releases/tag/v0.1.0) - 2025-06-21
 
