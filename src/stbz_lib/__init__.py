@@ -2,6 +2,10 @@
 stbz_lib 對外 API。
 """
 
+__version__ = "0.1.1"
+__author__ = "bzstudio"
+__license__ = "MIT"
+
 from ._capture import capture
 from ._close import close
 from ._kb import kb_block, kb_hold, kb_tap, kb_unblock
