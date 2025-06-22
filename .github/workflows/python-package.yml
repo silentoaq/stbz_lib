@@ -47,6 +47,7 @@ jobs:
         python -c "from stbz_lib import capture, close"
         
         Write-Host "Package validation successful" -ForegroundColor Green
+
       shell: powershell
       
     - name: Run tests
