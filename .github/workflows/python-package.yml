@@ -46,8 +46,7 @@ jobs:
         python -c "from stbz_lib import mouse_tap, mouse_hold, mouse_pos, mouse_move, mouse_block, mouse_unblock"
         python -c "from stbz_lib import capture, close"
         
-        Write-Host "Package validation successful" -ForegroundColor Green
-
+        echo "Package validation successful"
       shell: powershell
       
     - name: Run tests
