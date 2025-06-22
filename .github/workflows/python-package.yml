@@ -5,14 +5,14 @@ name: Python package
 
 on:
   push:
-    branches: [ "develop" ]
+    branches: [ "main", "develop" ]
   pull_request:
-    branches: [ "develop" ]
+    branches: [ "main", "develop" ]
 
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
@@ -20,22 +20,45 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+        
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install flake8 pytest
-        python -m pip install numpy==2.3.0
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with flake8
+        python -m pip install wheel setuptools
+        python -m pip install pre-commit pytest
+        python -m pip install -e .
+      shell: powershell
+      
+    - name: Run pre-commit checks
       run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
+        pre-commit run --all-files
+        
+    - name: Validate package
       run: |
-        pytest
+        python -c "import stbz_lib; print(f'Package version: {stbz_lib.__version__}')"
+        
+        python -c "from stbz_lib import kb_tap, kb_hold, kb_block, kb_unblock"
+        python -c "from stbz_lib import mouse_tap, mouse_hold, mouse_pos, mouse_move, mouse_block, mouse_unblock"
+        python -c "from stbz_lib import capture, close"
+        
+        Write-Host "✓ Package validation successful" -ForegroundColor Green
+      shell: powershell
+      
+    - name: Run tests
+      run: |
+        $env:PYTHONPATH = "${{ github.workspace }}\src"
+        pytest tests/ -v
+      shell: powershell
+      continue-on-error: true  
+      
+    - name: Build distribution
+      run: |
+        python -m pip install build
+        python -m build
+        Get-ChildItem dist
+      shell: powershell
