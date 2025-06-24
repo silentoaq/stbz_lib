@@ -1,4 +1,4 @@
-# test_cv.py
+# tests/test_cv.py
 import time
 
 from stbz_lib import *
