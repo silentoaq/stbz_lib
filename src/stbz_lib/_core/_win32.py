@@ -92,6 +92,20 @@ BI_RGB = 0
 # ── 進程相關 ─────────────────────────────────────────
 PROCESS_TERMINATE = 0x0001
 
+# ── 關機相關 ─────────────────────────────────────────
+EWX_SHUTDOWN = 0x00000001
+EWX_REBOOT = 0x00000002
+EWX_FORCE = 0x00000004
+EWX_POWEROFF = 0x00000008
+EWX_FORCEIFHUNG = 0x00000010
+SHTDN_REASON_FLAG_PLANNED = 0x80000000
+
+# ── 權限相關 ─────────────────────────────────────────
+TOKEN_ADJUST_PRIVILEGES = 0x00000020
+TOKEN_QUERY = 0x00000008
+SE_PRIVILEGE_ENABLED = 0x00000002
+SE_SHUTDOWN_NAME = "SeShutdownPrivilege"
+
 # ══════════════════════════════════════════════════════
 # 結構定義
 # ══════════════════════════════════════════════════════
@@ -193,12 +207,35 @@ class BITMAPINFO(ctypes.Structure):
     _fields_ = [("bmiHeader", BITMAPINFOHEADER), ("bmiColors", wintypes.DWORD * 3)]
 
 
+# ── 權限結構 ─────────────────────────────────────────
+class LUID(ctypes.Structure):
+    _fields_ = [
+        ("LowPart", wintypes.DWORD),
+        ("HighPart", wintypes.LONG),
+    ]
+
+
+class LUID_AND_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [
+        ("Luid", LUID),
+        ("Attributes", wintypes.DWORD),
+    ]
+
+
+class TOKEN_PRIVILEGES(ctypes.Structure):
+    _fields_ = [
+        ("PrivilegeCount", wintypes.DWORD),
+        ("Privileges", LUID_AND_ATTRIBUTES * 1),
+    ]
+
+
 # ══════════════════════════════════════════════════════
 # DLL 載入
 # ══════════════════════════════════════════════════════
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 gdi32 = ctypes.WinDLL("gdi32", use_last_error=True)
+advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
 
 # ══════════════════════════════════════════════════════
 # 回調函數類型
@@ -374,3 +411,32 @@ kernel32.TerminateProcess.argtypes = [wintypes.HANDLE, wintypes.UINT]
 # CloseHandle
 kernel32.CloseHandle.restype = wintypes.BOOL
 kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+
+# ── 關機 API ─────────────────────────────────────────
+# ExitWindowsEx
+user32.ExitWindowsEx.restype = wintypes.BOOL
+user32.ExitWindowsEx.argtypes = [wintypes.UINT, wintypes.DWORD]
+
+# ── 權限 API ─────────────────────────────────────────
+# GetCurrentProcess
+kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+kernel32.GetCurrentProcess.argtypes = []
+
+# OpenProcessToken
+advapi32.OpenProcessToken.restype = wintypes.BOOL
+advapi32.OpenProcessToken.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)]
+
+# LookupPrivilegeValueW
+advapi32.LookupPrivilegeValueW.restype = wintypes.BOOL
+advapi32.LookupPrivilegeValueW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR, ctypes.POINTER(LUID)]
+
+# AdjustTokenPrivileges
+advapi32.AdjustTokenPrivileges.restype = wintypes.BOOL
+advapi32.AdjustTokenPrivileges.argtypes = [
+    wintypes.HANDLE,
+    wintypes.BOOL,
+    ctypes.POINTER(TOKEN_PRIVILEGES),
+    wintypes.DWORD,
+    ctypes.POINTER(TOKEN_PRIVILEGES),
+    ctypes.POINTER(wintypes.DWORD),
+]
