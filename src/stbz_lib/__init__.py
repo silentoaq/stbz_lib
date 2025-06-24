@@ -10,6 +10,7 @@ from ._capture import capture
 from ._close import close
 from ._kb import kb_block, kb_hold, kb_tap, kb_unblock
 from ._mouse import mouse_block, mouse_hold, mouse_move, mouse_pos, mouse_tap, mouse_unblock
+from ._shutdown import reboot, shutdown
 
 __all__ = [
     # 鍵盤
@@ -28,4 +29,7 @@ __all__ = [
     "capture",
     # 視窗控制
     "close",
+    # 系統控制
+    "shutdown",
+    "reboot",
 ]
