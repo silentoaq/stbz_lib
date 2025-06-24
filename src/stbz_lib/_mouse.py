@@ -125,6 +125,10 @@ def _release_all_buttons():
 
 
 def mouse_block(button_list=None):
+    """
+    阻擋滑鼠按鍵
+    button_list : 滑鼠按鍵列表，若為 None 則阻擋所有滑鼠操作
+    """
     _ensure_hook_started()
 
     with _mouse_lock:
@@ -135,6 +139,10 @@ def mouse_block(button_list=None):
 
 
 def mouse_unblock(button_list=None):
+    """
+    取消阻擋滑鼠按鍵
+    button_list : 滑鼠按鍵列表，若為 None 則取消所有阻擋
+    """
     with _mouse_lock:
         if button_list is None:
             _mouse_block_set.clear()
@@ -144,6 +152,12 @@ def mouse_unblock(button_list=None):
 
 
 def mouse_tap(button, count=1, interval_ms=50):
+    """
+    點擊滑鼠按鍵
+    button      : 滑鼠按鍵 (MOUSE_LEFT/RIGHT/MIDDLE/X1/X2)
+    count       : 連續點擊次數
+    interval_ms : 每次間隔 (毫秒)
+    """
     for i in range(count):
         if i > 0:
             time.sleep(interval_ms / 1000.0)
@@ -153,6 +167,13 @@ def mouse_tap(button, count=1, interval_ms=50):
 
 
 def mouse_hold(button, duration_ms=100, count=1, interval_ms=50):
+    """
+    按住滑鼠按鍵 (防止外部滑鼠按鍵干擾)
+    button      : 滑鼠按鍵 (MOUSE_LEFT/RIGHT/MIDDLE/X1/X2)
+    duration_ms : 持續時間 (毫秒)
+    count       : 連續次數
+    interval_ms : 每次間隔 (毫秒)
+    """
     _ensure_hook_started()
 
     for i in range(count):
@@ -172,12 +193,23 @@ def mouse_hold(button, duration_ms=100, count=1, interval_ms=50):
 
 
 def mouse_pos(x, y):
+    """
+    滑鼠移動到指定位置
+    x : X 座標
+    y : Y 座標
+    """
     result = user32.SetCursorPos(x, y)
     if not result:
         raise ctypes.WinError(ctypes.get_last_error())
 
 
 def mouse_move(direction, duration_ms=1000, speed=5):
+    """
+    滑鼠移動到螢幕邊緣，然後持續往該方向移動
+    direction   : 移動方向 (MOVE_UP/DOWN/LEFT/RIGHT)
+    duration_ms : 持續時間 (毫秒)
+    speed       : 移動速度 (每次移動的像素數)
+    """
     screen_width = user32.GetSystemMetrics(SM_CXSCREEN)
     screen_height = user32.GetSystemMetrics(SM_CYSCREEN)
 
@@ -206,16 +238,29 @@ def mouse_move(direction, duration_ms=1000, speed=5):
 
 
 def get_blocked_buttons():
+    """
+    取得目前被阻擋的按鍵列表
+    返回 : 滑鼠按鍵列表
+    """
     with _mouse_lock:
         return list(_mouse_block_set)
 
 
 def is_button_blocked(button):
+    """
+    檢查指定按鍵是否被阻擋
+    button : 滑鼠按鍵
+    返回   : True 表示被阻擋，False 表示未被阻擋
+    """
     with _mouse_lock:
         return button in _mouse_block_set
 
 
 def get_mouse_pos():
+    """
+    取得滑鼠目前位置
+    返回 : (x, y) 座標元組
+    """
     pos = POINT()
     user32.GetCursorPos(ctypes.byref(pos))
     return (pos.x, pos.y)

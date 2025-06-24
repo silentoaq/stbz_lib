@@ -7,7 +7,6 @@ import numpy as np
 from ._core._win32 import *
 
 
-# ── 內部函數 ─────────────────────────────────────────
 def _find_window(name):
     found_hwnd = None
     name_lower = name.lower()
@@ -78,7 +77,6 @@ def _capture_window(hwnd):
     return img, x, y, w, h
 
 
-# ── 公開 API ─────────────────────────────────────────
 def capture(name):
     """
     截取指定視窗

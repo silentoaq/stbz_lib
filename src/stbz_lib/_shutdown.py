@@ -1,31 +1,7 @@
-# src/stbz_lib/_shutdown.py
 import ctypes
+import time
 
 from ._core._win32 import *
-
-
-def shutdown(force=True):
-    flags = EWX_SHUTDOWN | EWX_POWEROFF
-    if force:
-        flags |= EWX_FORCE | EWX_FORCEIFHUNG
-
-    _enable_shutdown_privilege()
-
-    result = user32.ExitWindowsEx(flags, SHTDN_REASON_FLAG_PLANNED)
-    if not result:
-        raise ctypes.WinError(ctypes.get_last_error())
-
-
-def reboot(force=True):
-    flags = EWX_REBOOT
-    if force:
-        flags |= EWX_FORCE | EWX_FORCEIFHUNG
-
-    _enable_shutdown_privilege()
-
-    result = user32.ExitWindowsEx(flags, SHTDN_REASON_FLAG_PLANNED)
-    if not result:
-        raise ctypes.WinError(ctypes.get_last_error())
 
 
 def _enable_shutdown_privilege():
@@ -51,3 +27,43 @@ def _enable_shutdown_privilege():
 
     finally:
         kernel32.CloseHandle(hToken)
+
+
+def shutdown(force=True, delay_ms=0):
+    """
+    關機
+    force    : 是否強制關閉應用程式（預設為 True）
+    delay_ms : 延遲時間（毫秒）
+    """
+    if delay_ms > 0:
+        time.sleep(delay_ms / 1000.0)
+
+    flags = EWX_SHUTDOWN | EWX_POWEROFF
+    if force:
+        flags |= EWX_FORCE | EWX_FORCEIFHUNG
+
+    _enable_shutdown_privilege()
+
+    result = user32.ExitWindowsEx(flags, SHTDN_REASON_FLAG_PLANNED)
+    if not result:
+        raise ctypes.WinError(ctypes.get_last_error())
+
+
+def reboot(force=True, delay_ms=0):
+    """
+    重新開機
+    force    : 是否強制關閉應用程式（預設為 True）
+    delay_ms : 延遲時間（毫秒）
+    """
+    if delay_ms > 0:
+        time.sleep(delay_ms / 1000.0)
+
+    flags = EWX_REBOOT
+    if force:
+        flags |= EWX_FORCE | EWX_FORCEIFHUNG
+
+    _enable_shutdown_privilege()
+
+    result = user32.ExitWindowsEx(flags, SHTDN_REASON_FLAG_PLANNED)
+    if not result:
+        raise ctypes.WinError(ctypes.get_last_error())

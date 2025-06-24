@@ -90,6 +90,10 @@ def _release_all_keys():
 
 
 def kb_block(keys=None):
+    """
+    阻擋指定按鍵
+    keys : 虛擬鍵碼列表，若為 None 則阻擋所有按鍵 (0x08-0xFE)
+    """
     _ensure_hook_started()
 
     with _kb_lock:
@@ -100,6 +104,10 @@ def kb_block(keys=None):
 
 
 def kb_unblock(keys=None):
+    """
+    取消阻擋按鍵
+    keys : 虛擬鍵碼列表，若為 None 則取消所有阻擋
+    """
     with _kb_lock:
         if keys is None:
             _kb_block_set.clear()
@@ -109,6 +117,12 @@ def kb_unblock(keys=None):
 
 
 def kb_tap(key, count=1, interval_ms=50):
+    """
+    模擬點按按鍵
+    key         : 虛擬鍵碼
+    count       : 連續次數
+    interval_ms : 每次間隔 (毫秒)
+    """
     for i in range(count):
         if i > 0:
             time.sleep(interval_ms / 1000.0)
@@ -118,6 +132,13 @@ def kb_tap(key, count=1, interval_ms=50):
 
 
 def kb_hold(key, duration_ms=100, count=1, interval_ms=50):
+    """
+    模擬按住按鍵 (防止外部按鍵干擾)
+    key         : 虛擬鍵碼
+    duration_ms : 持續時間 (毫秒)
+    count       : 連續次數
+    interval_ms : 每次間隔 (毫秒)
+    """
     _ensure_hook_started()
 
     for i in range(count):
@@ -137,11 +158,20 @@ def kb_hold(key, duration_ms=100, count=1, interval_ms=50):
 
 
 def get_blocked_keys():
+    """
+    取得目前被阻擋的按鍵列表
+    返回 : 虛擬鍵碼列表
+    """
     with _kb_lock:
         return list(_kb_block_set)
 
 
 def is_key_blocked(key):
+    """
+    檢查指定按鍵是否被阻擋
+    key : 虛擬鍵碼
+    返回 : True 表示被阻擋，False 表示未被阻擋
+    """
     with _kb_lock:
         return key in _kb_block_set
 

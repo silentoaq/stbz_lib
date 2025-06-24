@@ -6,7 +6,6 @@ from ctypes import wintypes
 from ._core._win32 import *
 
 
-# ── 內部函數 ─────────────────────────────────────────
 def _find_windows_and_pids(name):
     found_pids = set()
     name_lower = name.lower()
@@ -46,7 +45,6 @@ def _terminate_process(pid):
         kernel32.CloseHandle(hProcess)
 
 
-# ── 公開 API ─────────────────────────────────────────
 def close(name, delay_ms=0):
     """
     強制關閉所有符合名稱的進程
