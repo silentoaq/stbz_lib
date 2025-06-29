@@ -6,7 +6,6 @@ import time
 from ._core._hook import start_hook
 from ._core._win32 import *
 
-# ── 滑鼠按鍵常數 ─────────────────────────────────────
 MOUSE_LEFT = 0x01
 MOUSE_RIGHT = 0x02
 MOUSE_MIDDLE = 0x03
@@ -14,63 +13,66 @@ MOUSE_X1 = 0x04
 MOUSE_X2 = 0x05
 MOUSE_MOVE = 0x06
 
-# ── 滑鼠移動方向常數 ─────────────────────────────────
 MOVE_UP = 0x10
 MOVE_DOWN = 0x11
 MOVE_LEFT = 0x12
 MOVE_RIGHT = 0x13
 
-# ── 全域狀態 ─────────────────────────────────────────
 _mouse_block_set = set()
 _mouse_lock = threading.Lock()
 _pressed_buttons = set()
 _held_buttons = set()
+_hook_initialized = False
 
 
-# ── 滑鼠 Hook 回調 ────────────────────────────────────
-def _make_mouse_callback():
+def _global_mouse_callback(nCode, wParam, lParam):
+    if nCode >= 0:
+        info = ctypes.cast(lParam, ctypes.POINTER(MSLLHOOKSTRUCT)).contents
+        is_injected = (info.flags & LLMHF_INJECTED) != 0
 
-    def callback(nCode, wParam, lParam):
-        if nCode >= 0:
-            info = ctypes.cast(lParam, ctypes.POINTER(MSLLHOOKSTRUCT)).contents
-            is_injected = (info.flags & LLMHF_INJECTED) != 0
-
-            if not is_injected:
-                with _mouse_lock:
-                    if wParam in (WM_LBUTTONDOWN, WM_LBUTTONUP) and MOUSE_LEFT in _held_buttons:
+        if not is_injected:
+            with _mouse_lock:
+                if wParam in (WM_LBUTTONDOWN, WM_LBUTTONUP) and MOUSE_LEFT in _held_buttons:
+                    return 1
+                elif wParam in (WM_RBUTTONDOWN, WM_RBUTTONUP) and MOUSE_RIGHT in _held_buttons:
+                    return 1
+                elif wParam in (WM_MBUTTONDOWN, WM_MBUTTONUP) and MOUSE_MIDDLE in _held_buttons:
+                    return 1
+                elif wParam in (WM_XBUTTONDOWN, WM_XBUTTONUP):
+                    button = (info.mouseData >> 16) & 0xFFFF
+                    if button == XBUTTON1 and MOUSE_X1 in _held_buttons:
                         return 1
-                    elif wParam in (WM_RBUTTONDOWN, WM_RBUTTONUP) and MOUSE_RIGHT in _held_buttons:
+                    elif button == XBUTTON2 and MOUSE_X2 in _held_buttons:
                         return 1
-                    elif wParam in (WM_MBUTTONDOWN, WM_MBUTTONUP) and MOUSE_MIDDLE in _held_buttons:
-                        return 1
-                    elif wParam in (WM_XBUTTONDOWN, WM_XBUTTONUP):
-                        button = (info.mouseData >> 16) & 0xFFFF
-                        if button == XBUTTON1 and MOUSE_X1 in _held_buttons:
-                            return 1
-                        elif button == XBUTTON2 and MOUSE_X2 in _held_buttons:
-                            return 1
 
-                    if wParam == WM_MOUSEMOVE and MOUSE_MOVE in _mouse_block_set:
+                if wParam == WM_MOUSEMOVE and MOUSE_MOVE in _mouse_block_set:
+                    return 1
+                elif wParam in (WM_LBUTTONDOWN, WM_LBUTTONUP) and MOUSE_LEFT in _mouse_block_set:
+                    return 1
+                elif wParam in (WM_RBUTTONDOWN, WM_RBUTTONUP) and MOUSE_RIGHT in _mouse_block_set:
+                    return 1
+                elif wParam in (WM_MBUTTONDOWN, WM_MBUTTONUP) and MOUSE_MIDDLE in _mouse_block_set:
+                    return 1
+                elif wParam in (WM_XBUTTONDOWN, WM_XBUTTONUP):
+                    button = (info.mouseData >> 16) & 0xFFFF
+                    if button == XBUTTON1 and MOUSE_X1 in _mouse_block_set:
                         return 1
-                    elif wParam in (WM_LBUTTONDOWN, WM_LBUTTONUP) and MOUSE_LEFT in _mouse_block_set:
+                    elif button == XBUTTON2 and MOUSE_X2 in _mouse_block_set:
                         return 1
-                    elif wParam in (WM_RBUTTONDOWN, WM_RBUTTONUP) and MOUSE_RIGHT in _mouse_block_set:
-                        return 1
-                    elif wParam in (WM_MBUTTONDOWN, WM_MBUTTONUP) and MOUSE_MIDDLE in _mouse_block_set:
-                        return 1
-                    elif wParam in (WM_XBUTTONDOWN, WM_XBUTTONUP):
-                        button = (info.mouseData >> 16) & 0xFFFF
-                        if button == XBUTTON1 and MOUSE_X1 in _mouse_block_set:
-                            return 1
-                        elif button == XBUTTON2 and MOUSE_X2 in _mouse_block_set:
-                            return 1
 
-        return user32.CallNextHookEx(None, nCode, wParam, lParam)
-
-    return LowLevelMouseProc(callback)
+    return user32.CallNextHookEx(None, nCode, wParam, lParam)
 
 
-# ── 內部輔助函數 ──────────────────────────────────────
+_mouse_callback = LowLevelMouseProc(_global_mouse_callback)
+
+
+def _ensure_hook_started():
+    global _hook_initialized
+    if not _hook_initialized:
+        start_hook(mouse_callback=_mouse_callback)
+        _hook_initialized = True
+
+
 def _send_mouse_event(dx=0, dy=0, dwData=0, dwFlags=0):
     inp = INPUT()
     inp.type = INPUT_MOUSE
@@ -122,13 +124,12 @@ def _release_all_buttons():
     _held_buttons.clear()
 
 
-# ── 公開 API ─────────────────────────────────────────
 def mouse_block(button_list=None):
     """
     阻擋滑鼠按鍵
     button_list : 滑鼠按鍵列表，若為 None 則阻擋所有滑鼠操作
     """
-    start_hook(mouse_callback=_make_mouse_callback())
+    _ensure_hook_started()
 
     with _mouse_lock:
         if button_list is None:
@@ -173,7 +174,7 @@ def mouse_hold(button, duration_ms=100, count=1, interval_ms=50):
     count       : 連續次數
     interval_ms : 每次間隔 (毫秒)
     """
-    start_hook(mouse_callback=_make_mouse_callback())
+    _ensure_hook_started()
 
     for i in range(count):
         if i > 0:
@@ -236,27 +237,40 @@ def mouse_move(direction, duration_ms=1000, speed=5):
         time.sleep(0.01)
 
 
-# ── 擴展功能 ─────────────────────────────────────────
 def get_blocked_buttons():
+    """
+    取得目前被阻擋的按鍵列表
+    返回 : 滑鼠按鍵列表
+    """
     with _mouse_lock:
         return list(_mouse_block_set)
 
 
 def is_button_blocked(button):
+    """
+    檢查指定按鍵是否被阻擋
+    button : 滑鼠按鍵
+    返回   : True 表示被阻擋，False 表示未被阻擋
+    """
     with _mouse_lock:
         return button in _mouse_block_set
 
 
 def get_mouse_pos():
+    """
+    取得滑鼠目前位置
+    返回 : (x, y) 座標元組
+    """
     pos = POINT()
     user32.GetCursorPos(ctypes.byref(pos))
     return (pos.x, pos.y)
 
 
-# ── 清理 ─────────────────────────────────────────────
 def _cleanup():
     _release_all_buttons()
     mouse_unblock()
+    global _hook_initialized
+    _hook_initialized = False
 
 
 import atexit

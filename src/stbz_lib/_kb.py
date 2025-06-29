@@ -6,35 +6,40 @@ import time
 from ._core._hook import start_hook
 from ._core._win32 import *
 
-# ── 全域狀態 ─────────────────────────────────────────
 _kb_block_set = set()
 _kb_lock = threading.Lock()
 _scancode_cache = {}
 _pressed_keys = set()
 _held_keys = set()
+_hook_initialized = False
 
 
-# ── 鍵盤 Hook 回調 ────────────────────────────────────
-def _make_keyboard_callback():
-    def callback(nCode, wParam, lParam):
-        if nCode >= 0 and (wParam == WM_KEYDOWN or wParam == WM_KEYUP):
-            info = ctypes.cast(lParam, ctypes.POINTER(KBDLLHOOKSTRUCT)).contents
-            vk = info.vkCode
-            is_injected = (info.flags & LLKHF_INJECTED) != 0
+def _global_keyboard_callback(nCode, wParam, lParam):
+    if nCode >= 0 and (wParam == WM_KEYDOWN or wParam == WM_KEYUP):
+        info = ctypes.cast(lParam, ctypes.POINTER(KBDLLHOOKSTRUCT)).contents
+        vk = info.vkCode
+        is_injected = (info.flags & LLKHF_INJECTED) != 0
 
-            if not is_injected:
-                with _kb_lock:
-                    if vk in _held_keys:
-                        return 1
-                    if vk in _kb_block_set:
-                        return 1
+        if not is_injected:
+            with _kb_lock:
+                if vk in _held_keys:
+                    return 1
+                if vk in _kb_block_set:
+                    return 1
 
-        return user32.CallNextHookEx(None, nCode, wParam, lParam)
-
-    return LowLevelKeyboardProc(callback)
+    return user32.CallNextHookEx(None, nCode, wParam, lParam)
 
 
-# ── 內部輔助函數 ──────────────────────────────────────
+_keyboard_callback = LowLevelKeyboardProc(_global_keyboard_callback)
+
+
+def _ensure_hook_started():
+    global _hook_initialized
+    if not _hook_initialized:
+        start_hook(keyboard_callback=_keyboard_callback)
+        _hook_initialized = True
+
+
 def _get_scancode(vk):
     if vk not in _scancode_cache:
         _scancode_cache[vk] = user32.MapVirtualKeyW(vk, MAPVK_VK_TO_VSC)
@@ -84,13 +89,12 @@ def _release_all_keys():
     _held_keys.clear()
 
 
-# ── 公開 API ─────────────────────────────────────────
 def kb_block(keys=None):
     """
     阻擋指定按鍵
     keys : 虛擬鍵碼列表，若為 None 則阻擋所有按鍵 (0x08-0xFE)
     """
-    start_hook(keyboard_callback=_make_keyboard_callback())
+    _ensure_hook_started()
 
     with _kb_lock:
         if keys is None:
@@ -135,7 +139,7 @@ def kb_hold(key, duration_ms=100, count=1, interval_ms=50):
     count       : 連續次數
     interval_ms : 每次間隔 (毫秒)
     """
-    start_hook(keyboard_callback=_make_keyboard_callback())
+    _ensure_hook_started()
 
     for i in range(count):
         if i > 0:
@@ -153,21 +157,30 @@ def kb_hold(key, duration_ms=100, count=1, interval_ms=50):
                 _held_keys.discard(key)
 
 
-# ── 擴展功能 ─────────────────────────────────────────
 def get_blocked_keys():
+    """
+    取得目前被阻擋的按鍵列表
+    返回 : 虛擬鍵碼列表
+    """
     with _kb_lock:
         return list(_kb_block_set)
 
 
 def is_key_blocked(key):
+    """
+    檢查指定按鍵是否被阻擋
+    key : 虛擬鍵碼
+    返回 : True 表示被阻擋，False 表示未被阻擋
+    """
     with _kb_lock:
         return key in _kb_block_set
 
 
-# ── 清理 ─────────────────────────────────────────────
 def _cleanup():
     _release_all_keys()
     kb_unblock()
+    global _hook_initialized
+    _hook_initialized = False
 
 
 import atexit

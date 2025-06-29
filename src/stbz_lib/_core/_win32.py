@@ -15,6 +15,9 @@ WPARAM = ULONG_PTR
 LPARAM = LONG_PTR
 LRESULT = LONG_PTR
 HHOOK = ctypes.c_void_p
+HRESULT = ctypes.c_long
+LPWSTR = ctypes.c_wchar_p
+LPCWSTR = ctypes.c_wchar_p
 
 # ══════════════════════════════════════════════════════
 # 常數定義
@@ -30,6 +33,7 @@ LLMHF_INJECTED = 0x00000001
 # ── 視窗訊息 ─────────────────────────────────────────
 WM_QUIT = 0x0012
 WM_CLOSE = 0x0010
+WM_USER = 0x0400
 
 # 鍵盤訊息
 WM_KEYDOWN = 0x0100
@@ -90,6 +94,41 @@ BI_RGB = 0
 
 # ── 進程相關 ─────────────────────────────────────────
 PROCESS_TERMINATE = 0x0001
+
+# ── 關機相關 ─────────────────────────────────────────
+EWX_SHUTDOWN = 0x00000001
+EWX_REBOOT = 0x00000002
+EWX_FORCE = 0x00000004
+EWX_POWEROFF = 0x00000008
+EWX_FORCEIFHUNG = 0x00000010
+SHTDN_REASON_FLAG_PLANNED = 0x80000000
+
+# ── 權限相關 ─────────────────────────────────────────
+TOKEN_ADJUST_PRIVILEGES = 0x00000020
+TOKEN_QUERY = 0x00000008
+SE_PRIVILEGE_ENABLED = 0x00000002
+SE_SHUTDOWN_NAME = "SeShutdownPrivilege"
+
+# ── COM 相關 ─────────────────────────────────────────
+CLSCTX_INPROC_SERVER = 0x1
+CLSCTX_ALL = 0x17
+
+# ── Audio 相關 ───────────────────────────────────────
+# Device State
+DEVICE_STATE_ACTIVE = 0x1
+DEVICE_STATE_DISABLED = 0x2
+DEVICE_STATE_NOTPRESENT = 0x4
+DEVICE_STATE_UNPLUGGED = 0x8
+
+# EDataFlow
+EDATA_FLOW_RENDER = 0
+EDATA_FLOW_CAPTURE = 1
+EDATA_FLOW_ALL = 2
+
+# ERole
+EROLE_CONSOLE = 0
+EROLE_MULTIMEDIA = 1
+EROLE_COMMUNICATIONS = 2
 
 # ══════════════════════════════════════════════════════
 # 結構定義
@@ -192,12 +231,68 @@ class BITMAPINFO(ctypes.Structure):
     _fields_ = [("bmiHeader", BITMAPINFOHEADER), ("bmiColors", wintypes.DWORD * 3)]
 
 
+# ── 權限結構 ─────────────────────────────────────────
+class LUID(ctypes.Structure):
+    _fields_ = [
+        ("LowPart", wintypes.DWORD),
+        ("HighPart", wintypes.LONG),
+    ]
+
+
+class LUID_AND_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [
+        ("Luid", LUID),
+        ("Attributes", wintypes.DWORD),
+    ]
+
+
+class TOKEN_PRIVILEGES(ctypes.Structure):
+    _fields_ = [
+        ("PrivilegeCount", wintypes.DWORD),
+        ("Privileges", LUID_AND_ATTRIBUTES * 1),
+    ]
+
+
+# ── COM 相關結構 ─────────────────────────────────────
+class GUID(ctypes.Structure):
+    _fields_ = [
+        ("Data1", wintypes.DWORD),
+        ("Data2", wintypes.WORD),
+        ("Data3", wintypes.WORD),
+        ("Data4", wintypes.BYTE * 8),
+    ]
+
+    def __init__(self, guid_str):
+        guid_str = guid_str.strip('{}').replace('-', '')
+        self.Data1 = int(guid_str[0:8], 16)
+        self.Data2 = int(guid_str[8:12], 16)
+        self.Data3 = int(guid_str[12:16], 16)
+        self.Data4[0] = int(guid_str[16:18], 16)
+        self.Data4[1] = int(guid_str[18:20], 16)
+        for i in range(6):
+            self.Data4[i + 2] = int(guid_str[20 + i * 2 : 22 + i * 2], 16)
+
+
+class IUnknown(ctypes.Structure):
+    """COM IUnknown 基礎介面"""
+
+    pass
+
+
+# ── Audio GUIDs ──────────────────────────────────────
+CLSID_MMDeviceEnumerator = GUID('{BCDE0395-E52F-467C-8E3D-C4579291692E}')
+IID_IAudioEndpointVolume = GUID('{5CDF2C82-841E-4546-9722-0CF74078229A}')
+IID_IMMDevice = GUID('{D666063F-1587-4E43-81F1-B948E807363F}')
+IID_IMMDeviceEnumerator = GUID('{A95664D2-9614-4F35-A746-DE8DB63617E6}')
+
 # ══════════════════════════════════════════════════════
 # DLL 載入
 # ══════════════════════════════════════════════════════
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 gdi32 = ctypes.WinDLL("gdi32", use_last_error=True)
+advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+ole32 = ctypes.oledll.ole32
 
 # ══════════════════════════════════════════════════════
 # 回調函數類型
@@ -373,3 +468,51 @@ kernel32.TerminateProcess.argtypes = [wintypes.HANDLE, wintypes.UINT]
 # CloseHandle
 kernel32.CloseHandle.restype = wintypes.BOOL
 kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+
+# ── 關機 API ─────────────────────────────────────────
+# ExitWindowsEx
+user32.ExitWindowsEx.restype = wintypes.BOOL
+user32.ExitWindowsEx.argtypes = [wintypes.UINT, wintypes.DWORD]
+
+# ── 權限 API ─────────────────────────────────────────
+# GetCurrentProcess
+kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+kernel32.GetCurrentProcess.argtypes = []
+
+# OpenProcessToken
+advapi32.OpenProcessToken.restype = wintypes.BOOL
+advapi32.OpenProcessToken.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)]
+
+# LookupPrivilegeValueW
+advapi32.LookupPrivilegeValueW.restype = wintypes.BOOL
+advapi32.LookupPrivilegeValueW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR, ctypes.POINTER(LUID)]
+
+# AdjustTokenPrivileges
+advapi32.AdjustTokenPrivileges.restype = wintypes.BOOL
+advapi32.AdjustTokenPrivileges.argtypes = [
+    wintypes.HANDLE,
+    wintypes.BOOL,
+    ctypes.POINTER(TOKEN_PRIVILEGES),
+    wintypes.DWORD,
+    ctypes.POINTER(TOKEN_PRIVILEGES),
+    ctypes.POINTER(wintypes.DWORD),
+]
+
+# ── COM API ──────────────────────────────────────────
+# CoInitialize
+ole32.CoInitialize.argtypes = [ctypes.c_void_p]
+ole32.CoInitialize.restype = HRESULT
+
+# CoUninitialize
+ole32.CoUninitialize.argtypes = []
+ole32.CoUninitialize.restype = None
+
+# CoCreateInstance
+ole32.CoCreateInstance.argtypes = [
+    ctypes.POINTER(GUID),
+    ctypes.c_void_p,
+    wintypes.DWORD,
+    ctypes.POINTER(GUID),
+    ctypes.POINTER(ctypes.c_void_p),
+]
+ole32.CoCreateInstance.restype = HRESULT
