@@ -113,6 +113,23 @@ SE_SHUTDOWN_NAME = "SeShutdownPrivilege"
 CLSCTX_INPROC_SERVER = 0x1
 CLSCTX_ALL = 0x17
 
+# ── Audio 相關 ───────────────────────────────────────
+# Device State
+DEVICE_STATE_ACTIVE = 0x1
+DEVICE_STATE_DISABLED = 0x2
+DEVICE_STATE_NOTPRESENT = 0x4
+DEVICE_STATE_UNPLUGGED = 0x8
+
+# EDataFlow
+EDATA_FLOW_RENDER = 0
+EDATA_FLOW_CAPTURE = 1
+EDATA_FLOW_ALL = 2
+
+# ERole
+EROLE_CONSOLE = 0
+EROLE_MULTIMEDIA = 1
+EROLE_COMMUNICATIONS = 2
+
 # ══════════════════════════════════════════════════════
 # 結構定義
 # ══════════════════════════════════════════════════════
