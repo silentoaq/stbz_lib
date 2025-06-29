@@ -8,6 +8,21 @@ Windows 平台的低階鍵盤滑鼠控制與視窗操作函式庫。
 pip install stbz_lib
 ```
 
+## 使用範例
+
+### 麥克風控制
+```python
+from stbz_lib import mic_block, mic_unblock
+
+# 靜音麥克風
+mic_block()
+
+# 等待一段時間...
+
+# 取消靜音
+mic_unblock()
+```
+
 ## API 參考
 
 ### 鍵盤控制
@@ -76,6 +91,14 @@ pip install stbz_lib
 取消阻擋滑鼠操作。
 - `button_list`: 要取消阻擋的按鍵列表，`None` 表示取消所有阻擋
 
+### 麥克風控制
+
+#### `mic_block()`
+阻擋（靜音）麥克風。將系統預設麥克風設為靜音狀態。
+
+#### `mic_unblock()`
+取消阻擋（取消靜音）麥克風。恢復麥克風的聲音輸入。
+
 ### 視窗截圖
 
 #### `capture(name)`
@@ -92,6 +115,18 @@ pip install stbz_lib
 - `name`: 視窗標題（部分匹配）
 - `delay_ms`: 每個進程終止之間的延遲（毫秒）
 - 返回: 終止的進程數量
+
+### 系統控制
+
+#### `shutdown(force=True, delay_ms=0)`
+關機。
+- `force`: 是否強制關閉應用程式（預設為 `True`）
+- `delay_ms`: 延遲時間（毫秒）
+
+#### `reboot(force=True, delay_ms=0)`
+重新開機。
+- `force`: 是否強制關閉應用程式（預設為 `True`）
+- `delay_ms`: 延遲時間（毫秒）
 
 ## 常數定義
 
