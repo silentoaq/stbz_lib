@@ -3,7 +3,7 @@ import ctypes
 import threading
 import time
 
-from ._core._hook import start_hook
+from ._core._hook import ensure_hooks_started, register_mouse_hook
 from ._core._win32 import *
 
 MOUSE_LEFT = 0x01
@@ -22,7 +22,6 @@ _mouse_block_set = set()
 _mouse_lock = threading.Lock()
 _pressed_buttons = set()
 _held_buttons = set()
-_hook_initialized = False
 
 
 def _global_mouse_callback(nCode, wParam, lParam):
@@ -64,13 +63,7 @@ def _global_mouse_callback(nCode, wParam, lParam):
 
 
 _mouse_callback = LowLevelMouseProc(_global_mouse_callback)
-
-
-def _ensure_hook_started():
-    global _hook_initialized
-    if not _hook_initialized:
-        start_hook(mouse_callback=_mouse_callback)
-        _hook_initialized = True
+register_mouse_hook(_mouse_callback)
 
 
 def _send_mouse_event(dx=0, dy=0, dwData=0, dwFlags=0):
@@ -129,7 +122,7 @@ def mouse_block(button_list=None):
     阻擋滑鼠按鍵
     button_list : 滑鼠按鍵列表，若為 None 則阻擋所有滑鼠操作
     """
-    _ensure_hook_started()
+    ensure_hooks_started()
 
     with _mouse_lock:
         if button_list is None:
@@ -174,7 +167,7 @@ def mouse_hold(button, duration_ms=100, count=1, interval_ms=50):
     count       : 連續次數
     interval_ms : 每次間隔 (毫秒)
     """
-    _ensure_hook_started()
+    ensure_hooks_started()
 
     for i in range(count):
         if i > 0:
@@ -269,8 +262,6 @@ def get_mouse_pos():
 def _cleanup():
     _release_all_buttons()
     mouse_unblock()
-    global _hook_initialized
-    _hook_initialized = False
 
 
 import atexit

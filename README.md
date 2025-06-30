@@ -8,21 +8,6 @@ Windows 平台的低階鍵盤滑鼠控制與視窗操作函式庫。
 pip install stbz_lib
 ```
 
-## 使用範例
-
-### 麥克風控制
-```python
-from stbz_lib import mic_block, mic_unblock
-
-# 靜音麥克風
-mic_block()
-
-# 等待一段時間...
-
-# 取消靜音
-mic_unblock()
-```
-
 ## API 參考
 
 ### 鍵盤控制

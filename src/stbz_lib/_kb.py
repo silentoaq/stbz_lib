@@ -3,7 +3,7 @@ import ctypes
 import threading
 import time
 
-from ._core._hook import start_hook
+from ._core._hook import ensure_hooks_started, register_keyboard_hook
 from ._core._win32 import *
 
 _kb_block_set = set()
@@ -11,7 +11,6 @@ _kb_lock = threading.Lock()
 _scancode_cache = {}
 _pressed_keys = set()
 _held_keys = set()
-_hook_initialized = False
 
 
 def _global_keyboard_callback(nCode, wParam, lParam):
@@ -31,13 +30,7 @@ def _global_keyboard_callback(nCode, wParam, lParam):
 
 
 _keyboard_callback = LowLevelKeyboardProc(_global_keyboard_callback)
-
-
-def _ensure_hook_started():
-    global _hook_initialized
-    if not _hook_initialized:
-        start_hook(keyboard_callback=_keyboard_callback)
-        _hook_initialized = True
+register_keyboard_hook(_keyboard_callback)
 
 
 def _get_scancode(vk):
@@ -94,7 +87,7 @@ def kb_block(keys=None):
     阻擋指定按鍵
     keys : 虛擬鍵碼列表，若為 None 則阻擋所有按鍵 (0x08-0xFE)
     """
-    _ensure_hook_started()
+    ensure_hooks_started()
 
     with _kb_lock:
         if keys is None:
@@ -139,7 +132,7 @@ def kb_hold(key, duration_ms=100, count=1, interval_ms=50):
     count       : 連續次數
     interval_ms : 每次間隔 (毫秒)
     """
-    _ensure_hook_started()
+    ensure_hooks_started()
 
     for i in range(count):
         if i > 0:
@@ -179,8 +172,6 @@ def is_key_blocked(key):
 def _cleanup():
     _release_all_keys()
     kb_unblock()
-    global _hook_initialized
-    _hook_initialized = False
 
 
 import atexit

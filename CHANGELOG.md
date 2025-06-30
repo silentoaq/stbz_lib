@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-01-01
+
+### Fixed
+- 修正鍵盤和滑鼠 Hook 交互使用時造成的卡頓問題
+- 改善 Hook 管理器的初始化流程，確保所有 Hook 在同一線程中運行
+
 ## [0.2.0] - 2025-06-30
 
 ### Added
