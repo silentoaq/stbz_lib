@@ -15,3 +15,9 @@ dist/
 # Conda
 .env/
 .conda/
+
+# Claude Code
+.claude/
+
+# Testing
+.pytest_cache/

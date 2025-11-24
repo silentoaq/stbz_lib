@@ -2,8 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.2.2] - 2025-01-24
+
+### Fixed
+- 修復視窗截圖功能的 GDI 資源洩漏問題，現在異常時也能正確釋放 DC 和 Bitmap 資源
+- 改善麥克風控制的穩定性，新增自動重試機制處理裝置變更或 COM 介面失效情況
 
 ## [0.2.1] - 2025-01-01
 

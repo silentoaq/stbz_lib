@@ -42,39 +42,42 @@ def _capture_window(hwnd):
     if not hdc:
         raise RuntimeError("無法取得視窗 DC")
 
-    src = gdi32.CreateCompatibleDC(hdc)
-    if not src:
+    src = None
+    bmp = None
+    try:
+        src = gdi32.CreateCompatibleDC(hdc)
+        if not src:
+            raise RuntimeError("無法建立相容 DC")
+
+        bmp = gdi32.CreateCompatibleBitmap(hdc, w, h)
+        if not bmp:
+            raise RuntimeError("無法建立 Bitmap")
+
+        gdi32.SelectObject(src, bmp)
+
+        if not user32.PrintWindow(hwnd, src, PW_RENDERFULLCONTENT):
+            gdi32.BitBlt(src, 0, 0, w, h, hdc, 0, 0, SRCCOPY)
+
+        bmi = BITMAPINFO()
+        bmi.bmiHeader.biSize = ctypes.sizeof(BITMAPINFOHEADER)
+        bmi.bmiHeader.biWidth = w
+        bmi.bmiHeader.biHeight = -h
+        bmi.bmiHeader.biPlanes = 1
+        bmi.bmiHeader.biBitCount = 24
+        bmi.bmiHeader.biCompression = BI_RGB
+
+        buf = ctypes.create_string_buffer(w * h * 3)
+        gdi32.GetDIBits(src, bmp, 0, h, buf, ctypes.byref(bmi), DIB_RGB_COLORS)
+        img = np.frombuffer(buf, dtype=np.uint8).reshape((h, w, 3))
+
+        return img, x, y, w, h
+
+    finally:
+        if bmp:
+            gdi32.DeleteObject(bmp)
+        if src:
+            gdi32.DeleteDC(src)
         user32.ReleaseDC(hwnd, hdc)
-        raise RuntimeError("無法建立相容 DC")
-
-    bmp = gdi32.CreateCompatibleBitmap(hdc, w, h)
-    if not bmp:
-        gdi32.DeleteDC(src)
-        user32.ReleaseDC(hwnd, hdc)
-        raise RuntimeError("無法建立 Bitmap")
-
-    gdi32.SelectObject(src, bmp)
-
-    if not user32.PrintWindow(hwnd, src, PW_RENDERFULLCONTENT):
-        gdi32.BitBlt(src, 0, 0, w, h, hdc, 0, 0, SRCCOPY)
-
-    bmi = BITMAPINFO()
-    bmi.bmiHeader.biSize = ctypes.sizeof(BITMAPINFOHEADER)
-    bmi.bmiHeader.biWidth = w
-    bmi.bmiHeader.biHeight = -h
-    bmi.bmiHeader.biPlanes = 1
-    bmi.bmiHeader.biBitCount = 24
-    bmi.bmiHeader.biCompression = BI_RGB
-
-    buf = ctypes.create_string_buffer(w * h * 3)
-    gdi32.GetDIBits(src, bmp, 0, h, buf, ctypes.byref(bmi), DIB_RGB_COLORS)
-    img = np.frombuffer(buf, dtype=np.uint8).reshape((h, w, 3))
-
-    gdi32.DeleteObject(bmp)
-    gdi32.DeleteDC(src)
-    user32.ReleaseDC(hwnd, hdc)
-
-    return img, x, y, w, h
 
 
 def capture(name):

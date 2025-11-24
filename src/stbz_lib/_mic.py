@@ -133,6 +133,19 @@ def _get_volume_endpoint():
     return _volume_endpoint
 
 
+def _reset_com_cache():
+    """重置 COM 介面快取（當裝置變更或 COM 調用失敗時使用）"""
+    global _volume_endpoint, _device_enumerator
+
+    if _volume_endpoint:
+        _com_release(_volume_endpoint)
+        _volume_endpoint = None
+
+    if _device_enumerator:
+        _com_release(_device_enumerator)
+        _device_enumerator = None
+
+
 def mic_block():
     """
     阻擋（靜音）麥克風
@@ -140,22 +153,29 @@ def mic_block():
     global _mic_muted
 
     with _mic_lock:
-        try:
-            endpoint = _get_volume_endpoint()
+        retry_count = 0
+        while retry_count < 2:
+            try:
+                endpoint = _get_volume_endpoint()
 
-            vtbl = ctypes.cast(endpoint, POINTER(POINTER(ctypes.c_void_p))).contents
-            set_mute_func = ctypes.cast(
-                vtbl[IAUDIOENDPOINTVOLUME_SET_MUTE],
-                ctypes.WINFUNCTYPE(HRESULT, ctypes.c_void_p, BOOL, POINTER(GUID)),
-            )
+                vtbl = ctypes.cast(endpoint, POINTER(POINTER(ctypes.c_void_p))).contents
+                set_mute_func = ctypes.cast(
+                    vtbl[IAUDIOENDPOINTVOLUME_SET_MUTE],
+                    ctypes.WINFUNCTYPE(HRESULT, ctypes.c_void_p, BOOL, POINTER(GUID)),
+                )
 
-            hr = set_mute_func(endpoint, True, None)
-            if hr < 0:
-                raise ctypes.WinError(hr)
+                hr = set_mute_func(endpoint, True, None)
+                if hr < 0:
+                    raise ctypes.WinError(hr)
 
-            _mic_muted = True
-        except Exception as e:
-            raise RuntimeError(f"無法靜音麥克風: {e}")
+                _mic_muted = True
+                break
+            except Exception as e:
+                if retry_count == 0:
+                    _reset_com_cache()
+                    retry_count += 1
+                else:
+                    raise RuntimeError(f"無法靜音麥克風: {e}")
 
 
 def mic_unblock():
@@ -165,22 +185,29 @@ def mic_unblock():
     global _mic_muted
 
     with _mic_lock:
-        try:
-            endpoint = _get_volume_endpoint()
+        retry_count = 0
+        while retry_count < 2:
+            try:
+                endpoint = _get_volume_endpoint()
 
-            vtbl = ctypes.cast(endpoint, POINTER(POINTER(ctypes.c_void_p))).contents
-            set_mute_func = ctypes.cast(
-                vtbl[IAUDIOENDPOINTVOLUME_SET_MUTE],
-                ctypes.WINFUNCTYPE(HRESULT, ctypes.c_void_p, BOOL, POINTER(GUID)),
-            )
+                vtbl = ctypes.cast(endpoint, POINTER(POINTER(ctypes.c_void_p))).contents
+                set_mute_func = ctypes.cast(
+                    vtbl[IAUDIOENDPOINTVOLUME_SET_MUTE],
+                    ctypes.WINFUNCTYPE(HRESULT, ctypes.c_void_p, BOOL, POINTER(GUID)),
+                )
 
-            hr = set_mute_func(endpoint, False, None)
-            if hr < 0:
-                raise ctypes.WinError(hr)
+                hr = set_mute_func(endpoint, False, None)
+                if hr < 0:
+                    raise ctypes.WinError(hr)
 
-            _mic_muted = False
-        except Exception as e:
-            raise RuntimeError(f"無法取消靜音麥克風: {e}")
+                _mic_muted = False
+                break
+            except Exception as e:
+                if retry_count == 0:
+                    _reset_com_cache()
+                    retry_count += 1
+                else:
+                    raise RuntimeError(f"無法取消靜音麥克風: {e}")
 
 
 def is_mic_blocked():
@@ -189,22 +216,28 @@ def is_mic_blocked():
     返回 : True 表示被阻擋（靜音），False 表示未被阻擋
     """
     with _mic_lock:
-        try:
-            endpoint = _get_volume_endpoint()
+        retry_count = 0
+        while retry_count < 2:
+            try:
+                endpoint = _get_volume_endpoint()
 
-            vtbl = ctypes.cast(endpoint, POINTER(POINTER(ctypes.c_void_p))).contents
-            get_mute_func = ctypes.cast(
-                vtbl[IAUDIOENDPOINTVOLUME_GET_MUTE], ctypes.WINFUNCTYPE(HRESULT, ctypes.c_void_p, POINTER(BOOL))
-            )
+                vtbl = ctypes.cast(endpoint, POINTER(POINTER(ctypes.c_void_p))).contents
+                get_mute_func = ctypes.cast(
+                    vtbl[IAUDIOENDPOINTVOLUME_GET_MUTE], ctypes.WINFUNCTYPE(HRESULT, ctypes.c_void_p, POINTER(BOOL))
+                )
 
-            is_muted = BOOL()
-            hr = get_mute_func(endpoint, ctypes.byref(is_muted))
-            if hr < 0:
-                raise ctypes.WinError(hr)
+                is_muted = BOOL()
+                hr = get_mute_func(endpoint, ctypes.byref(is_muted))
+                if hr < 0:
+                    raise ctypes.WinError(hr)
 
-            return bool(is_muted.value)
-        except Exception:
-            return _mic_muted
+                return bool(is_muted.value)
+            except Exception:
+                if retry_count == 0:
+                    _reset_com_cache()
+                    retry_count += 1
+                else:
+                    return _mic_muted
 
 
 def _cleanup():
