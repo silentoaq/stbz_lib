@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2025-01-26
+
+### Added
+- 鍵盤和滑鼠函數新增 `hwnd` 參數，支援背景輸入 (PostMessage)
+  - `kb_tap(key, hwnd=None)` - 可向背景窗口發送按鍵
+  - `kb_hold(key, hwnd=None)` - 可向背景窗口發送長按
+  - `mouse_tap(button, hwnd=None)` - 可向背景窗口發送滑鼠點擊
+  - `mouse_hold(button, hwnd=None)` - 可向背景窗口發送滑鼠長按
+- 經 Minecraft 1.21.10 實際測試驗證功能正常
+- 保持向後兼容，`hwnd=None` 時使用原有的 SendInput 前景輸入
+
 ## [0.2.2] - 2025-01-24
 
 ### Fixed
