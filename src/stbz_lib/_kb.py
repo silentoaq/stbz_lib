@@ -109,45 +109,73 @@ def kb_unblock(keys=None):
                 _kb_block_set.discard(key)
 
 
-def kb_tap(key, count=1, interval_ms=50):
+def kb_tap(key, count=1, interval_ms=50, hwnd=None):
     """
     模擬點按按鍵
     key         : 虛擬鍵碼
     count       : 連續次數
     interval_ms : 每次間隔 (毫秒)
+    hwnd        : 目標窗口句柄，若為 None 則使用 SendInput (前景輸入)，否則使用 PostMessage (背景輸入)
     """
-    for i in range(count):
-        if i > 0:
-            time.sleep(interval_ms / 1000.0)
-        _keydown(key)
-        time.sleep(0.01)
-        _keyup(key)
+    if hwnd is not None:
+        for i in range(count):
+            if i > 0:
+                time.sleep(interval_ms / 1000.0)
+
+            scancode = _get_scancode(key)
+            lparam_down = (scancode << 16) | 1
+            lparam_up = (scancode << 16) | 0xC0000001
+
+            user32.PostMessageW(hwnd, WM_KEYDOWN, key, lparam_down)
+            time.sleep(0.01)
+            user32.PostMessageW(hwnd, WM_KEYUP, key, lparam_up)
+    else:
+        for i in range(count):
+            if i > 0:
+                time.sleep(interval_ms / 1000.0)
+            _keydown(key)
+            time.sleep(0.01)
+            _keyup(key)
 
 
-def kb_hold(key, duration_ms=100, count=1, interval_ms=50):
+def kb_hold(key, duration_ms=100, count=1, interval_ms=50, hwnd=None):
     """
-    模擬按住按鍵 (防止外部按鍵干擾)
+    模擬按住按鍵
     key         : 虛擬鍵碼
     duration_ms : 持續時間 (毫秒)
     count       : 連續次數
     interval_ms : 每次間隔 (毫秒)
+    hwnd        : 目標窗口句柄，若為 None 則使用 SendInput (前景輸入並防止外部按鍵干擾)，否則使用 PostMessage (背景輸入)
     """
-    ensure_hooks_started()
+    if hwnd is not None:
+        for i in range(count):
+            if i > 0:
+                time.sleep(interval_ms / 1000.0)
 
-    for i in range(count):
-        if i > 0:
-            time.sleep(interval_ms / 1000.0)
+            scancode = _get_scancode(key)
+            lparam_down = (scancode << 16) | 1
+            lparam_up = (scancode << 16) | 0xC0000001
 
-        with _kb_lock:
-            _held_keys.add(key)
-
-        try:
-            _keydown(key)
+            user32.PostMessageW(hwnd, WM_KEYDOWN, key, lparam_down)
             time.sleep(duration_ms / 1000.0)
-            _keyup(key)
-        finally:
+            user32.PostMessageW(hwnd, WM_KEYUP, key, lparam_up)
+    else:
+        ensure_hooks_started()
+
+        for i in range(count):
+            if i > 0:
+                time.sleep(interval_ms / 1000.0)
+
             with _kb_lock:
-                _held_keys.discard(key)
+                _held_keys.add(key)
+
+            try:
+                _keydown(key)
+                time.sleep(duration_ms / 1000.0)
+                _keyup(key)
+            finally:
+                with _kb_lock:
+                    _held_keys.discard(key)
 
 
 def get_blocked_keys():

@@ -144,45 +144,87 @@ def mouse_unblock(button_list=None):
                 _mouse_block_set.discard(button)
 
 
-def mouse_tap(button, count=1, interval_ms=50):
+def mouse_tap(button, count=1, interval_ms=50, hwnd=None):
     """
     點擊滑鼠按鍵
     button      : 滑鼠按鍵 (MOUSE_LEFT/RIGHT/MIDDLE/X1/X2)
     count       : 連續點擊次數
     interval_ms : 每次間隔 (毫秒)
+    hwnd        : 目標窗口句柄，若為 None 則使用 SendInput (前景輸入)，否則使用 PostMessage (背景輸入)
     """
-    for i in range(count):
-        if i > 0:
-            time.sleep(interval_ms / 1000.0)
-        _mousedown(button)
-        time.sleep(0.01)
-        _mouseup(button)
+    if hwnd is not None:
+        for i in range(count):
+            if i > 0:
+                time.sleep(interval_ms / 1000.0)
+
+            if button == MOUSE_LEFT:
+                user32.PostMessageW(hwnd, WM_LBUTTONDOWN, 0, 0)
+                time.sleep(0.01)
+                user32.PostMessageW(hwnd, WM_LBUTTONUP, 0, 0)
+            elif button == MOUSE_RIGHT:
+                user32.PostMessageW(hwnd, WM_RBUTTONDOWN, 0, 0)
+                time.sleep(0.01)
+                user32.PostMessageW(hwnd, WM_RBUTTONUP, 0, 0)
+            elif button == MOUSE_MIDDLE:
+                user32.PostMessageW(hwnd, WM_MBUTTONDOWN, 0, 0)
+                time.sleep(0.01)
+                user32.PostMessageW(hwnd, WM_MBUTTONUP, 0, 0)
+            else:
+                raise ValueError(f"PostMessage 不支援 {button} 按鍵")
+    else:
+        for i in range(count):
+            if i > 0:
+                time.sleep(interval_ms / 1000.0)
+            _mousedown(button)
+            time.sleep(0.01)
+            _mouseup(button)
 
 
-def mouse_hold(button, duration_ms=100, count=1, interval_ms=50):
+def mouse_hold(button, duration_ms=100, count=1, interval_ms=50, hwnd=None):
     """
-    按住滑鼠按鍵 (防止外部滑鼠按鍵干擾)
+    按住滑鼠按鍵
     button      : 滑鼠按鍵 (MOUSE_LEFT/RIGHT/MIDDLE/X1/X2)
     duration_ms : 持續時間 (毫秒)
     count       : 連續次數
     interval_ms : 每次間隔 (毫秒)
+    hwnd        : 目標窗口句柄，若為 None 則使用 SendInput (前景輸入並防止外部滑鼠按鍵干擾)，否則使用 PostMessage (背景輸入)
     """
-    ensure_hooks_started()
+    if hwnd is not None:
+        for i in range(count):
+            if i > 0:
+                time.sleep(interval_ms / 1000.0)
 
-    for i in range(count):
-        if i > 0:
-            time.sleep(interval_ms / 1000.0)
+            if button == MOUSE_LEFT:
+                user32.PostMessageW(hwnd, WM_LBUTTONDOWN, 0, 0)
+                time.sleep(duration_ms / 1000.0)
+                user32.PostMessageW(hwnd, WM_LBUTTONUP, 0, 0)
+            elif button == MOUSE_RIGHT:
+                user32.PostMessageW(hwnd, WM_RBUTTONDOWN, 0, 0)
+                time.sleep(duration_ms / 1000.0)
+                user32.PostMessageW(hwnd, WM_RBUTTONUP, 0, 0)
+            elif button == MOUSE_MIDDLE:
+                user32.PostMessageW(hwnd, WM_MBUTTONDOWN, 0, 0)
+                time.sleep(duration_ms / 1000.0)
+                user32.PostMessageW(hwnd, WM_MBUTTONUP, 0, 0)
+            else:
+                raise ValueError(f"PostMessage 不支援 {button} 按鍵")
+    else:
+        ensure_hooks_started()
 
-        with _mouse_lock:
-            _held_buttons.add(button)
+        for i in range(count):
+            if i > 0:
+                time.sleep(interval_ms / 1000.0)
 
-        try:
-            _mousedown(button)
-            time.sleep(duration_ms / 1000.0)
-            _mouseup(button)
-        finally:
             with _mouse_lock:
-                _held_buttons.discard(button)
+                _held_buttons.add(button)
+
+            try:
+                _mousedown(button)
+                time.sleep(duration_ms / 1000.0)
+                _mouseup(button)
+            finally:
+                with _mouse_lock:
+                    _held_buttons.discard(button)
 
 
 def mouse_pos(x, y):
